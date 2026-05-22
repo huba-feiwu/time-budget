@@ -1,4 +1,15 @@
+use std::sync::Mutex;
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+use tauri::menu::{Menu, MenuItem};
+use tauri::{Manager, WindowEvent};
 use tauri_plugin_sql::{Migration, MigrationKind};
+
+struct CloseToTray(Mutex<bool>);
+
+#[tauri::command]
+fn set_close_to_tray(state: tauri::State<CloseToTray>, enabled: bool) {
+    *state.0.lock().unwrap() = enabled;
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -45,6 +56,8 @@ pub fn run() {
     ];
 
     tauri::Builder::default()
+        .manage(CloseToTray(Mutex::new(false)))
+        .invoke_handler(tauri::generate_handler![set_close_to_tray])
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:time_budget.db", migrations)
@@ -57,6 +70,41 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+            let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&quit])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    if event.id().as_ref() == "quit" {
+                        app.exit(0);
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { button, .. } = event {
+                        if button == tauri::tray::MouseButton::Left {
+                            if let Some(window) = tray.app_handle().get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let state = window.state::<CloseToTray>();
+                if *state.0.lock().unwrap() {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

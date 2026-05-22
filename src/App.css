@@ -281,6 +281,20 @@ body { background: var(--bg); color: var(--text); }
 }
 .record-form h3 { font-size: 18px; margin-bottom: 4px; }
 .form-date { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+.help-modal {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 440px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+.help-modal h3 { font-size: 18px; margin-bottom: 8px; }
+.help-modal h4 { font-size: 15px; margin: 14px 0 6px; color: var(--primary); }
+.help-modal .help-desc { font-size: 14px; color: var(--text-secondary); margin: 0 0 4px; line-height: 1.6; }
+.help-modal ul { margin: 4px 0 0; padding-left: 20px; font-size: 14px; line-height: 2; color: var(--text); }
 .record-form label { display: block; font-size: 13px; color: var(--text-secondary); margin: 10px 0 4px; }
 .record-form select,
 .record-form input[type="number"],

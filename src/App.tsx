@@ -7,7 +7,8 @@ import RecordList from './components/RecordList';
 import Stats from './components/Stats';
 import Calendar from './components/Calendar';
 import CategoryManage from './components/CategoryManage';
-import { formatHours, todayStr, getDayStartHour, setDayStartHour as saveDayStartSetting, getSleepInPct, setSleepInPct as saveSleepInPct, getDarkMode, setDarkMode as saveDarkMode } from './timeUtils';
+import HelpModal from './components/HelpModal';
+import { formatHours, todayStr, getDayStartHour, setDayStartHour as saveDayStartSetting, getSleepInPct, setSleepInPct as saveSleepInPct, getDarkMode, setDarkMode as saveDarkMode, getCloseToTray, setCloseToTray as saveCloseToTray } from './timeUtils';
 import './App.css';
 
 type Tab = 'today' | 'stats' | 'categories';
@@ -26,6 +27,8 @@ export default function App() {
   const [dayStartHour, setDayStartHourState] = useState(getDayStartHour);
   const [sleepInPct, setSleepInPctState] = useState(getSleepInPct);
   const [darkMode, setDarkModeState] = useState(getDarkMode);
+  const [closeToTray, setCloseToTrayState] = useState(getCloseToTray);
+  const [showHelp, setShowHelp] = useState(false);
   const isFuture = date > todayStr();
 
   const loadData = useCallback(async () => {
@@ -39,6 +42,13 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  useEffect(() => {
+    (async () => {
+      const { invoke } = await import('@tauri-apps/api/core');
+      invoke('set_close_to_tray', { enabled: closeToTray });
+    })();
+  }, [closeToTray]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -150,6 +160,11 @@ export default function App() {
     setDarkModeState(v);
   };
 
+  const handleCloseToTrayChange = (v: boolean) => {
+    saveCloseToTray(v);
+    setCloseToTrayState(v);
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -184,9 +199,17 @@ export default function App() {
                     <input type="checkbox" checked={darkMode} onChange={e => handleDarkModeChange(e.target.checked)} />
                   </label>
                 </div>
+                <div className="settings-row">
+                  <label className="settings-check-label">
+                    <span>关闭到托盘</span>
+                    <input type="checkbox" checked={closeToTray} onChange={e => handleCloseToTrayChange(e.target.checked)} />
+                  </label>
+                </div>
                 <div className="settings-divider" />
                 <button onClick={() => { handleExport(); setShowSettings(false); }}>导出数据</button>
                 <button onClick={() => { handleImport(); setShowSettings(false); }}>导入数据</button>
+                <div className="settings-divider" />
+                <button onClick={() => { setShowSettings(false); setShowHelp(true); }}>使用说明</button>
               </div>
             )}
           </div>
@@ -319,6 +342,7 @@ export default function App() {
           onCancel={() => { setShowForm(false); setEditRecord(null); }}
         />
       )}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }

@@ -63,3 +63,14 @@ export function getSleepInPct(): boolean {
 export function setSleepInPct(v: boolean): void {
   localStorage.setItem(SLEEP_KEY, String(v));
 }
+
+const TRAY_KEY = 'closeToTray';
+
+export function getCloseToTray(): boolean {
+  try { return localStorage.getItem(TRAY_KEY) === 'true'; }
+  catch { return false; }
+}
+
+export function setCloseToTray(v: boolean): void {
+  localStorage.setItem(TRAY_KEY, String(v));
+}
