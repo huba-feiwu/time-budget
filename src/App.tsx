@@ -8,7 +8,7 @@ import Stats from './components/Stats';
 import Calendar from './components/Calendar';
 import CategoryManage from './components/CategoryManage';
 import HelpModal from './components/HelpModal';
-import { formatHours, todayStr, getDayStartHour, setDayStartHour as saveDayStartSetting, getSleepInPct, setSleepInPct as saveSleepInPct, getDarkMode, setDarkMode as saveDarkMode, getCloseToTray, setCloseToTray as saveCloseToTray } from './timeUtils';
+import { formatHours, todayStr, getDayStartHour, setDayStartHour as saveDayStartSetting, getSleepInPct, setSleepInPct as saveSleepInPct, getDarkMode, setDarkMode as saveDarkMode, getRecordTimeMode, setRecordTimeMode as saveRecordTimeMode, getCloseToTray, setCloseToTray as saveCloseToTray } from './timeUtils';
 import './App.css';
 
 type Tab = 'today' | 'stats' | 'categories';
@@ -27,6 +27,7 @@ export default function App() {
   const [dayStartHour, setDayStartHourState] = useState(getDayStartHour);
   const [sleepInPct, setSleepInPctState] = useState(getSleepInPct);
   const [darkMode, setDarkModeState] = useState(getDarkMode);
+  const [recordTimeMode, setRecordTimeModeState] = useState<'start' | 'end' | 'estimated'>(getRecordTimeMode);
   const [closeToTray, setCloseToTrayState] = useState(getCloseToTray);
   const [showHelp, setShowHelp] = useState(false);
   const isFuture = date > todayStr();
@@ -160,6 +161,11 @@ export default function App() {
     setDarkModeState(v);
   };
 
+  const handleRecordTimeModeChange = (v: 'start' | 'end' | 'estimated') => {
+    saveRecordTimeMode(v);
+    setRecordTimeModeState(v);
+  };
+
   const handleCloseToTrayChange = (v: boolean) => {
     saveCloseToTray(v);
     setCloseToTrayState(v);
@@ -198,6 +204,14 @@ export default function App() {
                     <span>暗色模式</span>
                     <input type="checkbox" checked={darkMode} onChange={e => handleDarkModeChange(e.target.checked)} />
                   </label>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">记录时间</span>
+                  <select value={recordTimeMode} onChange={e => handleRecordTimeModeChange(e.target.value as 'start' | 'end' | 'estimated')}>
+                    <option value="start">开始时间</option>
+                    <option value="end">结束时间</option>
+                    <option value="estimated">估计计时</option>
+                  </select>
                 </div>
                 <div className="settings-row">
                   <label className="settings-check-label">
@@ -340,6 +354,7 @@ export default function App() {
           editRecord={editRecord}
           onSave={handleFormSave}
           onCancel={() => { setShowForm(false); setEditRecord(null); }}
+          timeMode={recordTimeMode}
         />
       )}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

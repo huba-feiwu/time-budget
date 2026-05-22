@@ -8,38 +8,97 @@ interface Props {
   editRecord?: RecordWithCategory | null;
   onSave: (categoryId: number, hours: number, startTime: string | null, endTime: string | null, note: string | null) => void;
   onCancel: () => void;
+  timeMode: 'start' | 'end' | 'estimated';
 }
 
-export default function RecordForm({ categories, date, editRecord, onSave, onCancel }: Props) {
+export default function RecordForm({ categories, date, editRecord, onSave, onCancel, timeMode }: Props) {
   const init = fromDecimal(editRecord?.hours ?? 0);
   const [categoryId, setCategoryId] = useState(editRecord?.category_id ?? categories[0]?.id ?? 0);
   const [hours, setHours] = useState(init.h > 0 ? init.h.toString() : '');
   const [minutes, setMinutes] = useState(init.m > 0 ? init.m.toString() : '');
-  const [startTime, setStartTime] = useState(editRecord?.start_time ?? '');
-  const [endTime, setEndTime] = useState(editRecord?.end_time ?? '');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [note, setNote] = useState(editRecord?.note ?? '');
 
-  // Auto-fill start or end time when duration + one time is known
+  // Initialize time fields from editRecord
   useEffect(() => {
+    if (!editRecord) return;
     const h = parseInt(hours) || 0;
     const m = parseInt(minutes) || 0;
     const durMins = h * 60 + m;
-    if (durMins <= 0) return;
 
-    if (startTime && !endTime) {
-      const [sh, sm] = startTime.split(':').map(Number);
-      const total = sh * 60 + sm + durMins;
-      const nh = Math.floor(total / 60) % 24;
-      const nm = total % 60;
-      setEndTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
-    } else if (endTime && !startTime) {
-      const [eh, em] = endTime.split(':').map(Number);
-      const total = eh * 60 + em - durMins;
-      const nh = ((total % (24 * 60)) + (24 * 60)) % (24 * 60);
-      const nm = nh % 60;
-      setStartTime(`${String(Math.floor(nh / 60)).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+    if (timeMode === 'start') {
+      if (editRecord.start_time) {
+        setStartTime(editRecord.start_time);
+      } else if (editRecord.end_time && durMins > 0) {
+        const [eh, em] = editRecord.end_time.split(':').map(Number);
+        const total = eh * 60 + em - durMins;
+        const wrapped = ((total % 1440) + 1440) % 1440;
+        const nh = Math.floor(wrapped / 60);
+        const nm = wrapped % 60;
+        setStartTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+      }
+    } else if (timeMode === 'end') {
+      if (editRecord.end_time) {
+        setEndTime(editRecord.end_time);
+      } else if (editRecord.start_time && durMins > 0) {
+        const [sh, sm] = editRecord.start_time.split(':').map(Number);
+        const total = sh * 60 + sm + durMins;
+        const nh = Math.floor(total / 60) % 24;
+        const nm = total % 60;
+        setEndTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+      }
+    } else {
+      // estimated: populate both if available, derive missing one
+      if (editRecord.start_time) setStartTime(editRecord.start_time);
+      if (editRecord.end_time) setEndTime(editRecord.end_time);
+      if (!editRecord.start_time && editRecord.end_time && durMins > 0) {
+        const [eh, em] = editRecord.end_time.split(':').map(Number);
+        const total = eh * 60 + em - durMins;
+        const wrapped = ((total % 1440) + 1440) % 1440;
+        const nh = Math.floor(wrapped / 60);
+        const nm = wrapped % 60;
+        setStartTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+      } else if (editRecord.start_time && !editRecord.end_time && durMins > 0) {
+        const [sh, sm] = editRecord.start_time.split(':').map(Number);
+        const total = sh * 60 + sm + durMins;
+        const nh = Math.floor(total / 60) % 24;
+        const nm = total % 60;
+        setEndTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+      }
     }
-  }, [hours, minutes, startTime, endTime]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-fill end time from start time + duration
+  useEffect(() => {
+    if (timeMode === 'end') return;
+    const h = parseInt(hours) || 0;
+    const m = parseInt(minutes) || 0;
+    const durMins = h * 60 + m;
+    if (durMins <= 0 || !startTime) return;
+
+    const [sh, sm] = startTime.split(':').map(Number);
+    const total = sh * 60 + sm + durMins;
+    const nh = Math.floor(total / 60) % 24;
+    const nm = total % 60;
+    setEndTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+  }, [hours, minutes, startTime, timeMode]);
+
+  // Auto-fill start time from end time - duration (end mode only)
+  useEffect(() => {
+    if (timeMode !== 'end') return;
+    const h = parseInt(hours) || 0;
+    const m = parseInt(minutes) || 0;
+    const durMins = h * 60 + m;
+    if (durMins <= 0 || !endTime) return;
+
+    const [eh, em] = endTime.split(':').map(Number);
+    const total = eh * 60 + em - durMins;
+    const wrapped = ((total % 1440) + 1440) % 1440;
+    const nh = Math.floor(wrapped / 60);
+    const nm = wrapped % 60;
+    setStartTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`);
+  }, [hours, minutes, endTime, timeMode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,16 +136,20 @@ export default function RecordForm({ categories, date, editRecord, onSave, onCan
           </div>
         </div>
 
-        <div className="form-row">
-          <div>
-            <label>开始时间（可选）</label>
+        <label>{timeMode === 'start' ? '开始时间' : timeMode === 'end' ? '结束时间' : '开始时间'}（可选）</label>
+        {timeMode === 'start' && (
+          <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+        )}
+        {timeMode === 'end' && (
+          <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+        )}
+        {timeMode === 'estimated' && (
+          <div className="form-row">
             <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
-          </div>
-          <div>
-            <label>结束时间（可选）</label>
+            <span className="unit" style={{ margin: '0 8px' }}>至</span>
             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
           </div>
-        </div>
+        )}
 
         <label>备注（可选）</label>
         <input type="text" value={note} placeholder="备注" onChange={e => setNote(e.target.value)} />

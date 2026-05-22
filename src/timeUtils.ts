@@ -64,6 +64,20 @@ export function setSleepInPct(v: boolean): void {
   localStorage.setItem(SLEEP_KEY, String(v));
 }
 
+const TIME_MODE_KEY = 'recordTimeMode';
+
+export function getRecordTimeMode(): 'start' | 'end' | 'estimated' {
+  try {
+    const v = localStorage.getItem(TIME_MODE_KEY);
+    if (v === 'end' || v === 'start' || v === 'estimated') return v;
+    return 'start';
+  } catch { return 'start'; }
+}
+
+export function setRecordTimeMode(v: 'start' | 'end' | 'estimated'): void {
+  localStorage.setItem(TIME_MODE_KEY, v);
+}
+
 const TRAY_KEY = 'closeToTray';
 
 export function getCloseToTray(): boolean {
