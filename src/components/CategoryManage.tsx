@@ -8,7 +8,7 @@ interface Props {
   onAdd: (name: string, color: string) => void;
 }
 
-const COLORS = ['#4A90D9','#E74C3C','#2ECC71','#F39C12','#E67E22','#9B59B6','#1ABC9C','#E91E63','#795548','#999999','#3498DB','#FF6B6B'];
+const COLORS = ['#5890cb','#d65a4d','#3ebc73','#dd9728','#d27f36','#9762ad','#2aac92','#d5326a','#74574d','#999999','#4595ca','#f07a7a'];
 
 export default function CategoryManage({ categories, onUpdate, onDelete, onAdd }: Props) {
   const [adding, setAdding] = useState(false);
@@ -53,6 +53,8 @@ export default function CategoryManage({ categories, onUpdate, onDelete, onAdd }
               <span key={c} className={`color-dot ${c === newColor ? 'selected' : ''}`}
                 style={{ backgroundColor: c }} onClick={() => setNewColor(c)} />
             ))}
+            <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
+              className="color-custom" title="自定义颜色" />
           </div>
           <div className="form-actions">
             <button className="btn btn-cancel" onClick={() => setAdding(false)}>取消</button>
@@ -72,6 +74,8 @@ export default function CategoryManage({ categories, onUpdate, onDelete, onAdd }
                     <span key={col} className={`color-dot ${col === editColor ? 'selected' : ''}`}
                       style={{ backgroundColor: col }} onClick={() => setEditColor(col)} />
                   ))}
+                  <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)}
+                    className="color-custom" title="自定义颜色" />
                 </div>
                 <div className="form-actions">
                   <button className="btn btn-cancel" onClick={() => setEditingId(null)}>取消</button>

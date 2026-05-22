@@ -7,7 +7,7 @@ import RecordList from './components/RecordList';
 import Stats from './components/Stats';
 import Calendar from './components/Calendar';
 import CategoryManage from './components/CategoryManage';
-import { formatHours, todayStr, getDayStartHour, setDayStartHour as saveDayStartSetting, getSleepInPct, setSleepInPct as saveSleepInPct } from './timeUtils';
+import { formatHours, todayStr, getDayStartHour, setDayStartHour as saveDayStartSetting, getSleepInPct, setSleepInPct as saveSleepInPct, getDarkMode, setDarkMode as saveDarkMode } from './timeUtils';
 import './App.css';
 
 type Tab = 'today' | 'stats' | 'categories';
@@ -25,6 +25,7 @@ export default function App() {
   const [carryoverInput, setCarryoverInput] = useState('0');
   const [dayStartHour, setDayStartHourState] = useState(getDayStartHour);
   const [sleepInPct, setSleepInPctState] = useState(getSleepInPct);
+  const [darkMode, setDarkModeState] = useState(getDarkMode);
   const isFuture = date > todayStr();
 
   const loadData = useCallback(async () => {
@@ -34,6 +35,10 @@ export default function App() {
     setSummary(sum);
     setCalKey(k => k + 1);
   }, [date]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -93,13 +98,15 @@ export default function App() {
 
   const handleExport = async () => {
     const data = await db.exportAllData();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `time-budget-${todayStr()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+    const path = await save({
+      defaultPath: `time-budget-${todayStr()}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (path) {
+      await writeTextFile(path, data);
+    }
   };
 
   const handleCarryoverSave = async () => {
@@ -120,7 +127,7 @@ export default function App() {
       if (!file) return;
       const text = await file.text();
       await db.importAllData(text);
-      loadData();
+      window.location.reload();
     };
     input.click();
   };
@@ -136,6 +143,11 @@ export default function App() {
     saveSleepInPct(v);
     setSleepInPctState(v);
     loadData();
+  };
+
+  const handleDarkModeChange = (v: boolean) => {
+    saveDarkMode(v);
+    setDarkModeState(v);
   };
 
   return (
@@ -164,6 +176,12 @@ export default function App() {
                   <label className="settings-check-label">
                     <span>睡眠占比</span>
                     <input type="checkbox" checked={sleepInPct} onChange={e => handleSleepInPctChange(e.target.checked)} />
+                  </label>
+                </div>
+                <div className="settings-row">
+                  <label className="settings-check-label">
+                    <span>暗色模式</span>
+                    <input type="checkbox" checked={darkMode} onChange={e => handleDarkModeChange(e.target.checked)} />
                   </label>
                 </div>
                 <div className="settings-divider" />
@@ -224,7 +242,7 @@ export default function App() {
                     <div className="budget-bar">
                       <div className="budget-bar-fill" style={{
                         width: `${Math.min(100, (summary.total_hours / summary.budget) * 100)}%`,
-                        backgroundColor: summary.total_hours > summary.budget ? '#e74c3c' : '#4A90D9',
+                        backgroundColor: summary.total_hours > summary.budget ? '#d65a4d' : '#5890cb',
                       }} />
                     </div>
                     <div className="budget-used-label">

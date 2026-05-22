@@ -214,11 +214,18 @@ export async function exportAllData(): Promise<string> {
   const d = await getDb();
   const categories = await getCategories();
   const records = await d.select('SELECT * FROM records ORDER BY date DESC');
+  const overrides = await d.select('SELECT * FROM budget_overrides ORDER BY date');
   const data = {
-    version: 1,
+    version: 2,
     exported_at: new Date().toLocaleString('zh-CN'),
     categories,
     records,
+    budget_overrides: overrides,
+    settings: {
+      dayStartHour: localStorage.getItem('dayStartHour') || '0',
+      sleepInPct: localStorage.getItem('sleepInPct') ?? 'true',
+      darkMode: localStorage.getItem('darkMode') || 'false',
+    },
   };
   return JSON.stringify(data, null, 2);
 }
@@ -248,5 +255,21 @@ export async function importAllData(jsonStr: string): Promise<void> {
         [rec.category_id, rec.date, rec.hours, rec.start_time, rec.end_time, rec.note]
       );
     }
+  }
+
+  if (data.budget_overrides) {
+    await ensureBudgetTable();
+    for (const ov of data.budget_overrides) {
+      await d.execute(
+        'INSERT OR REPLACE INTO budget_overrides (date, carryover) VALUES ($1, $2)',
+        [ov.date, ov.carryover]
+      );
+    }
+  }
+
+  if (data.settings) {
+    if (data.settings.dayStartHour !== undefined) localStorage.setItem('dayStartHour', data.settings.dayStartHour);
+    if (data.settings.sleepInPct !== undefined) localStorage.setItem('sleepInPct', data.settings.sleepInPct);
+    if (data.settings.darkMode !== undefined) localStorage.setItem('darkMode', data.settings.darkMode);
   }
 }

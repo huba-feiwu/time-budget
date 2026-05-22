@@ -29,15 +29,15 @@ pub fn run() {
                 CREATE INDEX IF NOT EXISTS idx_records_date ON records(date);
                 CREATE INDEX IF NOT EXISTS idx_records_category ON records(category_id);
 
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('睡觉', '#4A90D9', 1);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('工作', '#E74C3C', 2);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('学习', '#2ECC71', 3);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('通勤', '#F39C12', 4);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('吃饭', '#E67E22', 5);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('娱乐', '#9B59B6', 6);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('运动', '#1ABC9C', 7);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('社交', '#E91E63', 8);
-                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('家务', '#795548', 9);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('睡觉', '#5890cb', 1);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('工作', '#d65a4d', 2);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('学习', '#3ebc73', 3);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('通勤', '#dd9728', 4);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('吃饭', '#d27f36', 5);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('娱乐', '#9762ad', 6);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('运动', '#2aac92', 7);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('社交', '#d5326a', 8);
+                INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('家务', '#74574d', 9);
                 INSERT OR IGNORE INTO categories (name, color, sort_order) VALUES ('其他', '#999999', 10);
             ",
             kind: MigrationKind::Up,
@@ -55,6 +55,8 @@ pub fn run() {
                 .level(log::LevelFilter::Info)
                 .build(),
         )
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -42,6 +42,17 @@ export function todayStr(): string {
   return dateStr(d);
 }
 
+const DARK_KEY = 'darkMode';
+
+export function getDarkMode(): boolean {
+  try { return localStorage.getItem(DARK_KEY) === 'true'; }
+  catch { return false; }
+}
+
+export function setDarkMode(v: boolean): void {
+  localStorage.setItem(DARK_KEY, String(v));
+}
+
 const SLEEP_KEY = 'sleepInPct';
 
 export function getSleepInPct(): boolean {
